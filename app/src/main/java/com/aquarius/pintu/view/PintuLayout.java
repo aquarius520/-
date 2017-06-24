@@ -19,6 +19,7 @@ import android.widget.Toast;
 
 import com.aquarius.pintu.R;
 import com.aquarius.pintu.core.GameController;
+import com.aquarius.pintu.core.ResultActionListener;
 import com.aquarius.pintu.entity.ImageItem;
 import com.aquarius.pintu.utils.ImageSplitUtil;
 import com.aquarius.pintu.utils.ScreenUtil;
@@ -50,8 +51,8 @@ public class PintuLayout extends RelativeLayout implements View.OnClickListener{
 
     private boolean isExchangeAniming = false;  // 图片交换过程中
     private boolean mWholeImgShowing = false;
-    private boolean isGameSucceed = false;
     private Context mContext;
+    private ResultActionListener mListener;
 
     public PintuLayout(Context context) {
         this(context, null, 0);
@@ -152,9 +153,11 @@ public class PintuLayout extends RelativeLayout implements View.OnClickListener{
 
         if (canMove) {
             exchangeImageView(clickPosition, blankPosition);
-            isGameSucceed = GameController.isSuccess(mImageItemList);
+            boolean isGameSucceed = GameController.isSuccess(mImageItemList);
             if (isGameSucceed) {
-                showGameSucceedDialog();
+                if (mListener != null) {
+                    mListener.whenGameSucceed();
+                }
             }
         }else {
             //mFirstClickItem.setColorFilter(null);
@@ -246,20 +249,6 @@ public class PintuLayout extends RelativeLayout implements View.OnClickListener{
 
     }
 
-    private void showGameSucceedDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        builder.setTitle("恭喜");
-        builder.setMessage("拼图成功。");
-        builder.setCancelable(false);
-        builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-            }
-        });
-        builder.create().show();
-    }
-
     public void changeGameResource(Context context, int newResId) {
         mSourceBitmap = BitmapFactory.decodeResource(context.getResources(), newResId);
         mImageItemList.clear();
@@ -305,12 +294,8 @@ public class PintuLayout extends RelativeLayout implements View.OnClickListener{
         }
     }
 
-    public boolean isGameSucceed() {
-        return isGameSucceed;
-    }
-
-    public void setGameSucceed(boolean value) {
-        this.isGameSucceed = value;
+    public void setResultActionListener(ResultActionListener listener) {
+        mListener = listener;
     }
 
     private int getItemPosition(int index, List<ImageItem> itemList){

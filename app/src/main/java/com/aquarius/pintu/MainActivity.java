@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.aquarius.pintu.core.ResultActionListener;
 import com.aquarius.pintu.utils.ScreenUtil;
 import com.aquarius.pintu.view.PintuLayout;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ResultActionListener {
 
     private static final int GAME_SPEND_TIME_MSG = 100;
 
@@ -28,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private PintuLayout mGameContainer;
     private ActionBar mActionBar;
     private boolean isAlreadyStarted;   // 游戏是否开始 为了计时
+    private boolean isGameSucceed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         createWholeImageView();
         ((RelativeLayout)findViewById(R.id.root)).addView(mWholeImageView);
         mGameContainer = (PintuLayout) findViewById(R.id.pingtu_container);
+        mGameContainer.setResultActionListener(this);
         initActionbar();
         showStartGameDialog();
 
@@ -108,12 +111,17 @@ public class MainActivity extends AppCompatActivity {
     private int mSecond;
     private int mMinute;
 
+    @Override
+    public void whenGameSucceed() {
+        isGameSucceed = true;
+        showGameSucceedDialog();
+    }
+
     private class CalculateTimeTask implements Runnable{
 
         @Override
         public void run() {
-            if (mGameContainer.isGameSucceed()) {
-                mGameContainer.setGameSucceed(false);
+            if (isGameSucceed) {
                 handleAfterGameOver();
                 return;
             }
@@ -186,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
         mSecond = 0;
         mMinute = 0;
         isAlreadyStarted = false;
+        isGameSucceed = false;
         mSpendTime = null;
         calculateGameTime();
     }
@@ -203,6 +212,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 calculateGameTime();
+            }
+        });
+        builder.create().show();
+    }
+
+    private void showGameSucceedDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("恭喜");
+        builder.setMessage("拼图成功。");
+        builder.setCancelable(false);
+        builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
             }
         });
         builder.create().show();
