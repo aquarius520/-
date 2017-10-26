@@ -236,8 +236,9 @@ public class MainActivity extends AppCompatActivity implements ResultActionListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == SELECT_PIC_ABOVE_KITKAT) {
-            // etc: uri = content://com.android.providers.media.documents/document/image%3A10421
+        if (requestCode == SELECT_PIC_ABOVE_KITKAT || requestCode == SELECT_PIC) {
+            // etc: level6.0 uri = content://com.android.providers.media.documents/document/image%3A10421
+            // etc: level4.1.1 uri = content://media/external/images/media/183277
             Uri uri = data.getData();
             ContentResolver cr  = getContentResolver();
             try {

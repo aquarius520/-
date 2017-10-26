@@ -6,12 +6,13 @@ import android.graphics.BitmapFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.nio.Buffer;
 
 /**
  * Created by aquarius on 2017/10/26.
  */
 public class BitmapHelper {
+
+    private BitmapHelper(){}
 
     public static Bitmap acquireCompressedBitmapIfNeed(InputStream is, Context context) {
         if (is == null) {
