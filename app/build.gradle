@@ -8,8 +8,9 @@ android {
         applicationId "com.aquarius.pintu"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
+
     }
     buildTypes {
         release {
@@ -19,8 +20,17 @@ android {
     }
 }
 
+// ----- 需要加上这个配置 才能手动添加aar包依赖到应用中 ----
+ repositories {
+     flatDir {
+         dirs 'libs'
+     }
+ }
+// ----- 需要加上这个配置 才能手动添加aar包依赖到应用中 ----
+
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    //compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:25.0.1'
+    compile 'com.android.support:support-v4:25.0.0'
 }

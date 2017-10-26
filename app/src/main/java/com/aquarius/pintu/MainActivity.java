@@ -1,6 +1,15 @@
 package com.aquarius.pintu;
 
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.ActionBar;
@@ -10,20 +19,27 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-
 import com.aquarius.pintu.core.ResultActionListener;
+import com.aquarius.pintu.utils.BitmapHelper;
 import com.aquarius.pintu.utils.ScreenUtil;
 import com.aquarius.pintu.view.PintuLayout;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+
 public class MainActivity extends AppCompatActivity implements ResultActionListener {
 
     private static final int GAME_SPEND_TIME_MSG = 100;
+    private static final String TAG = "pintu";
 
     private ImageView mWholeImageView;
     private PintuLayout mGameContainer;
@@ -34,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements ResultActionListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         createWholeImageView();
         ((RelativeLayout)findViewById(R.id.root)).addView(mWholeImageView);
@@ -41,8 +58,10 @@ public class MainActivity extends AppCompatActivity implements ResultActionListe
         mGameContainer.setResultActionListener(this);
         initActionbar();
         showStartGameDialog();
-
     }
+
+
+
 
     @Override
     protected void onResume() {
@@ -50,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements ResultActionListe
         if(isAlreadyStarted) {
             calculateGameTime();
         }
+
     }
 
     @Override
@@ -181,9 +201,121 @@ public class MainActivity extends AppCompatActivity implements ResultActionListe
                 resetGameValues();
                 mGameContainer.resetGameAllInfo();
                 break;
+            case R.id.select_from_gallery:
+                selectPicFromGallery();
+                break;
 
+            case R.id.download_from_network:
+                downloadPicFromNet();
+            break;
+
+            default:
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private static final int SELECT_PIC_ABOVE_KITKAT = 100 ; //  >= 4.4 版本
+    private static final int SELECT_PIC = 0 ; // 4.4 以下
+    private Bitmap mNewBitmap;
+
+    private void selectPicFromGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("image/*");
+        intent.putExtra("crop", true);
+        // 区别是他们返回的Uri
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            startActivityForResult(intent, SELECT_PIC_ABOVE_KITKAT);
+        } else {
+            startActivityForResult(intent, SELECT_PIC);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == SELECT_PIC_ABOVE_KITKAT) {
+            // etc: uri = content://com.android.providers.media.documents/document/image%3A10421
+            Uri uri = data.getData();
+            ContentResolver cr  = getContentResolver();
+            try {
+                InputStream is = cr.openInputStream(uri);
+                mNewBitmap = BitmapHelper.acquireCompressedBitmapIfNeed(is, this);
+//                mNewBitmap = BitmapFactory.decodeStream(is, null, options);
+                mGameContainer.changeGameResource(this, mNewBitmap);
+                resetGameValues();
+                mGameContainer.resetGameAllInfo();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    private ProgressDialog progressDialog;
+
+    private void downloadPicFromNet() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("请输入网络图片的完整地址");
+        final EditText editText = new EditText(this);
+        builder.setView(editText);
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+            }
+        });
+        builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+                new AsyncTask<String, Void, Bitmap>() {
+                    @Override
+                    protected void onPreExecute() {
+                        super.onPreExecute();
+                        progressDialog = ProgressDialog.show(MainActivity.this, null, "图片下载中...");
+                    }
+
+                    @Override
+                    protected Bitmap doInBackground(String... params) {
+                        String imageUrl = params[0];
+                        try {
+                            URL url = new URL(imageUrl);
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setReadTimeout(60 * 1000);
+                            conn.setConnectTimeout(6 * 1000);
+                            conn.setUseCaches(true);
+                            conn.connect();
+                            if (conn.getResponseCode() >= 200 && conn.getResponseCode() < 299) {
+                                InputStream is = conn.getInputStream();
+                                return BitmapHelper.acquireCompressedBitmapIfNeed(is, PintuApplication.getInstance());
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Bitmap bitmap) {
+                        super.onPostExecute(bitmap);
+                        progressDialog.dismiss();
+                        if (bitmap == null) {
+                            return;
+                        }
+                        mGameContainer.changeGameResource(PintuApplication.getInstance(), bitmap);
+                        resetGameValues();
+                        mGameContainer.resetGameAllInfo();
+                    }
+                }.execute(editText.getText().toString().trim());
+
+            }
+        });
+
+        builder.create().show();
     }
 
     private void resetGameValues() {
@@ -248,5 +380,10 @@ public class MainActivity extends AppCompatActivity implements ResultActionListe
         });
     }
 
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 
 }

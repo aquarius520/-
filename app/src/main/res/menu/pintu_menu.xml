@@ -19,12 +19,21 @@
     <item
         android:id="@+id/show_pic2"
         android:orderInCategory="6"
-        android:title="示例图二"/>
+        android:title="拼图二"/>
 
     <item
         android:id="@+id/show_pic3"
         android:orderInCategory="7"
-        android:title="示例图三"/>
+        android:title="拼图三"/>
 
+    <item
+        android:id="@+id/select_from_gallery"
+        android:orderInCategory="7"
+        android:title="从图库选择"/>
+
+    <item
+        android:id="@+id/download_from_network"
+        android:orderInCategory="7"
+        android:title="从网络下载"/>
 
 </menu>

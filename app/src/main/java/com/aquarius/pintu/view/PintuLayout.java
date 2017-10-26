@@ -255,6 +255,12 @@ public class PintuLayout extends RelativeLayout implements View.OnClickListener{
         mImageItemList = ImageSplitUtil.splitImageToPieces(context, mSourceBitmap, mColumn);
     }
 
+    public void changeGameResource(Context context, Bitmap bitmap) {
+        mSourceBitmap = bitmap;
+        mImageItemList.clear();
+        mImageItemList = ImageSplitUtil.splitImageToPieces(context, bitmap, mColumn);
+    }
+
     private void resetGameBitmap() {
         if (mSourceBitmap != null) {
             GameController.elementsGenerator(mImageItemList, mColumn);
